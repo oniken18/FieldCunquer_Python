@@ -4,13 +4,14 @@ import threading
 import tkinter as tk
 from tkinter import messagebox
 from typing import Type
+
 import requests
 from PIL import Image, ImageTk
 from Pixel import Pixel
 
 
 class GameBoard:
-    AllPoints =[]
+    AllPoints = []
     PlayerCenter = ()
     size = 25, 25
     PosX = 3
@@ -27,58 +28,119 @@ class GameBoard:
     def MakeNewShape(self):
         stop = False
         newShape = []
-        currP = (700, 700)
-        tempPoints = list(self.AllPoints)
 
-        for p in tempPoints:
-            if p[0] <= currP[0]:
-                if p[1] < currP[1]:
-                    currP = p
+        tempPoints = list(self.AllPoints)
+        checkHorizontal = True
+        counter = 0
+        isFound = False
+        firstX = 700
+        firstY = 700
+
+        currP = (firstX, firstY)
+
+        # # find corner point
+        # for p in tempPoints:
+        #     if p[0] <= currP[0]:
+        #         if p[1] <= currP[1]:
+        #             currP = p
+
+        currP = tempPoints[-1]
 
         newShape.append(currP)
         tempPoints.remove(currP)
 
         while len(tempPoints) > 0 and not stop:
-            currP = (700, currP[1])
-            isFound = False
-            for p in tempPoints:
-                if p[1] == currP[1]:
-                    if p[0] < currP[0]:
-                        isFound = True
-                        currP = p
 
-            if not isFound:
-                currP = (0, currP[1])
+            if checkHorizontal:
+                # check right
+                currP = (700, currP[1])
+                isFound = False
                 for p in tempPoints:
                     if p[1] == currP[1]:
-                        if p[0] > currP[0]:
-                            currP = p
-
-            if isFound:
-                newShape.append(currP)
-                tempPoints.remove(currP)
-
-            currP = (currP[0], 700)
-            isFound = False
-            if len(tempPoints)>0:
-                for p in tempPoints:
-                    if p[0] == currP[0]:
-                        if p[1] < currP[1]:
+                        if newShape[-1][0] < p[0] < currP[0]:
                             isFound = True
+                            checkHorizontal = False
                             currP = p
-
+                # check left
                 if not isFound:
-                    currP = (currP[0], 0)
+                    currP = (0, currP[1])
                     for p in tempPoints:
-                        if p[0] == currP[0]:
-                            if p[1] > currP[1]:
+                        if p[1] == currP[1]:
+                            if newShape[-1][0] > p[0] > currP[0]:
                                 currP = p
-
+                                checkHorizontal = False
+                                isFound = True
                 if isFound:
                     newShape.append(currP)
                     tempPoints.remove(currP)
-                    
-        return newShape
+
+            if not checkHorizontal:
+                currP = (currP[0], 700)
+                isFound = False
+                if len(tempPoints) > 0:
+                    # check down
+                    for p in tempPoints:
+                        if p[0] == currP[0]:
+                            if newShape[-1][1] < p[1] < currP[1]:
+                                checkHorizontal = True
+                                isFound = True
+                                currP = p
+
+                    # check up
+                    if not isFound:
+                        currP = (currP[0], 0)
+                        for p in tempPoints:
+                            if p[0] == currP[0]:
+                                if newShape[-1][1] > p[1] > currP[1]:
+                                    currP = p
+                                    checkHorizontal = True
+                                    isFound = True
+                    if isFound:
+                        newShape.append(currP)
+                        tempPoints.remove(currP)
+
+            if len(tempPoints) == 0:
+                counter = 0
+                for p in newShape:
+                    if p[0] == newShape[0][0]:
+                        counter = counter + 1
+
+            if not isFound or counter % 2 != 0:
+                if newShape[0][0] == currP[0] and counter % 2 == 0:
+                    stop = True
+                else:
+                    newShape.remove(newShape[-1])
+                    checkHorizontal = True
+                    tempPoints = list(newShape + tempPoints)
+                    newShape.clear()
+                    currP = tempPoints[0]
+                    newShape.append(currP)
+                    tempPoints.remove(tempPoints[0])
+                    counter = 0
+
+        self.LinesProperties.clear()
+
+        for i in range(len(newShape) - 1):
+            if i % 2 == 0:
+                if newShape[i][0] < newShape[i + 1][0]:
+                    self.LinesProperties.append(('x', newShape[i][1], newShape[i][0], newShape[i + 1][0]))
+                else:
+                    self.LinesProperties.append(('x', newShape[i][1], newShape[i + 1][0], newShape[i][0],))
+            else:
+                if newShape[i][1] < newShape[i + 1][1]:
+                    self.LinesProperties.append(('y', newShape[i][0], newShape[i][1], newShape[i + 1][1]))
+                else:
+                    self.LinesProperties.append(('y', newShape[i][0], newShape[i + 1][1], newShape[i][1]))
+
+        if newShape[-1][1] < newShape[0][1]:
+            self.LinesProperties.append(('y', newShape[-1][0], newShape[-1][1], newShape[0][1]))
+        else:
+            self.LinesProperties.append(('y', newShape[-1][0], newShape[0][1], newShape[-1][1]))
+
+        self.AllPoints = list(newShape)
+        newShape.append(newShape[0])
+        self.canvas.delete(self.MainLn)
+        self.MainLn = self.canvas.create_polygon(newShape, fill='grey', width=1)
 
     def getStopPointX(self, direction, startX, Y):
         if direction == '4':
@@ -128,49 +190,68 @@ class GameBoard:
     def isMoveOnLine(self, Direction, currX, currY):
         currX = currX + 3
         currY = currY + 3
-        
+
         if Direction == '4':
             for ln in self.LinesProperties:
                 if ln[0] == 'x':
-                    if ln[1] == currY and ln[2] < currX:
+                    if ln[1] == currY and ln[2] < currX <= ln[3]:
                         return ln[2] - 3
             return 0
 
         if Direction == '6':
             for ln in self.LinesProperties:
                 if ln[0] == 'x':
-                    if ln[1] == currY and ln[3] > currX:
+                    if ln[1] == currY and ln[2] <= currX < ln[3]:
                         return ln[3]
             return 0
 
         if Direction == '8':
             for ln in self.LinesProperties:
                 if ln[0] == 'y':
-                    if ln[1] == currX and ln[2] < currY:
-                        return ln[2] -3
+                    if ln[1] == currX and ln[2] < currY <= ln[3]:
+                        return ln[2] - 3
             return 0
 
         if Direction == '5':
             for ln in self.LinesProperties:
                 if ln[0] == 'y':
-                    if ln[1] == currX and ln[3] > currY:
+                    if ln[1] == currX and ln[2] <= currY < ln[3]:
                         return ln[3]
             return 0
 
-    def isEscapingLine(self, Direction):
+    def isMoveIn(self, Direction, currX, currY):
+        counter = 0
+        currX = currX + 3
+        currY = currY + 3
+
         if Direction == '4':
-            if self.localMinMove < self.PosX - 0.01 < self.localMaxMove:
-                return True
+            for ln in self.LinesProperties:
+                if ln[0] == 'y':
+                    if ln[1] < currX and ln[2] <= currY <= ln[3]:
+                        counter = counter + 1
+
         elif Direction == '6':
-            if self.localMinMove < self.PosX + 3 + 0.01 < self.localMaxMove:
-                return True
+            for ln in self.LinesProperties:
+                if ln[0] == 'y':
+                    if ln[1] > currX and ln[2] <= currY <= ln[3]:
+                        counter = counter + 1
+
         elif Direction == '8':
-            if self.localMinMove < self.PosY - 0.01 < self.localMaxMove:
-                return True
+            for ln in self.LinesProperties:
+                if ln[0] == 'x':
+                    if ln[1] < currY and ln[2] <= currX <= ln[3]:
+                        counter = counter + 1
+
         elif Direction == '5':
-            if self.localMinMove < self.PosY + 3 + 0.01 < self.localMaxMove:
-                return True
-        return False
+            for ln in self.LinesProperties:
+                if ln[0] == 'x':
+                    if ln[1] > currY and ln[2] <= currX <= ln[3]:
+                        counter = counter + 1
+
+        if counter % 2 == 0:
+            return False
+        else:
+            return True
 
     def MovePlayer(self):
         tkLines = []
@@ -188,8 +269,8 @@ class GameBoard:
             tempMovingTo = self.MovingDirection
 
             if self.isSpacePressed and not self.isOutLine:
-                self.isOutLine = self.isEscapingLine(tempMovingTo)
-                print(self.isOutLine)
+                if not self.isMoveOnLine(tempMovingTo, self.PosX, self.PosY):
+                    self.isOutLine = self.isMoveIn(tempMovingTo, self.PosX, self.PosY)
 
             if originalDirection != tempMovingTo and not self.isOutLine:
                 nextEnablePoint = -1
@@ -204,7 +285,10 @@ class GameBoard:
 
                 t1 = (self.PosX + localSize, self.PosY + localSize)
                 tkLines.append(t1)
-                self.AllPoints.append(t1)
+                if t1 in self.AllPoints:
+                    self.AllPoints.remove(t1)
+                else:
+                    self.AllPoints.append(t1)
 
                 if isFirstLine:
                     isFirstLine = False
@@ -229,7 +313,8 @@ class GameBoard:
                 if StopPoint == 0 and self.isOutLine:
                     StopPoint = self.getStopPointX('4', self.PosX + localSize, self.PosY + localSize)
 
-                if (self.PosX <= nextEnablePoint and not self.isOutLine) or nextEnablePoint == 0 or (self.PosX <= StopPoint and self.isOutLine):
+                if (self.PosX <= nextEnablePoint and not self.isOutLine) or nextEnablePoint == 0 or (
+                        self.PosX <= StopPoint and self.isOutLine):
                     self.MovingDirection = '0'
                     break
 
@@ -254,7 +339,8 @@ class GameBoard:
                 if StopPoint == 0 and self.isOutLine:
                     StopPoint = self.getStopPointX('6', self.PosX + localSize, self.PosY + localSize)
 
-                if (self.PosX >= nextEnablePoint and not self.isOutLine) or nextEnablePoint == 0 or (self.PosX >= StopPoint and self.isOutLine):
+                if (self.PosX >= nextEnablePoint and not self.isOutLine) or nextEnablePoint == 0 or (
+                        self.PosX >= StopPoint and self.isOutLine):
                     self.MovingDirection = '0'
                     break
 
@@ -279,7 +365,8 @@ class GameBoard:
                 if StopPoint == 0 and self.isOutLine:
                     StopPoint = self.getStopPointY('8', self.PosY + localSize, self.PosX + localSize)
 
-                if (self.PosY <= nextEnablePoint and not self.isOutLine) or nextEnablePoint == 0 or (self.PosY <= StopPoint and self.isOutLine):
+                if (self.PosY <= nextEnablePoint and not self.isOutLine) or nextEnablePoint == 0 or (
+                        self.PosY <= StopPoint and self.isOutLine):
                     self.MovingDirection = '0'
                     break
                 temp = round((self.PosY - 0.01) * 100)
@@ -302,7 +389,8 @@ class GameBoard:
                 if StopPoint == 0 and self.isOutLine:
                     StopPoint = self.getStopPointY('5', self.PosY + localSize, self.PosX + localSize)
 
-                if (self.PosY >= nextEnablePoint and not self.isOutLine) or nextEnablePoint == 0 or (self.PosY >= StopPoint and self.isOutLine):
+                if (self.PosY >= nextEnablePoint and not self.isOutLine) or nextEnablePoint == 0 or (
+                        self.PosY >= StopPoint and self.isOutLine):
                     self.MovingDirection = '0'
                     break
 
@@ -327,7 +415,10 @@ class GameBoard:
 
             t1 = (self.PosX + localSize, self.PosY + localSize)
             tkLines.append(t1)
-            self.AllPoints.append(t1)
+            if t1 in self.AllPoints:
+                self.AllPoints.remove(t1)
+            else:
+                self.AllPoints.append(t1)
 
             for frm in tkFrames:
                 frm.pack_forget()
@@ -340,17 +431,12 @@ class GameBoard:
 
                 shapePoints = shapePoints + tkLines[0]
 
-                self.canvas.delete(self.MainLn)
-                self.AllPoints = self.MakeNewShape()
-                Shape = list(self.AllPoints)
-                Shape.append(self.AllPoints[0])
-                self.MainLn = self.canvas.create_line(Shape, fill='black', width=1)
-
+                self.MakeNewShape()
 
     def __init__(self, root):
 
-        canvasWidth = 615
-        canvasHeight = 615
+        canvasWidth = 610
+        canvasHeight = 610
 
         def setSpaceClick(event):
             self.isSpacePressed = True
@@ -369,7 +455,6 @@ class GameBoard:
                 thread1.start()
 
         def stopMovement(event):
-
             if self.MovingDirection == event.char and not self.isOutLine:
                 self.MovingDirection = '0'
 
@@ -385,14 +470,18 @@ class GameBoard:
         self.canvas.bind("<space>", setSpaceClick)
         self.canvas.pack()
 
-        self.MainLn = self.canvas.create_line(6, 6, 608, 6, 608, 608, 6, 608, 6, 6, fill='black', width=1)
+        filename = 'PIC.JPG'
+        img = tk.PhotoImage(file=r"Graphics/picpic.gif")
+        self.canvas.create_image(img.width()/2, img.height()/2, image=img)
+
+        self.MainLn = self.canvas.create_polygon(6, 6, 608, 6, 608, 608, 6, 608, 6, 6, fill='grey', width=1)
 
         self.LinesProperties.append(('y', 6, 6, 608))
         self.LinesProperties.append(('y', 608, 6, 608))
         self.LinesProperties.append(('x', 6, 6, 608))
         self.LinesProperties.append(('x', 608, 6, 608))
 
-        p = (6,6)
+        p = (6, 6)
         self.AllPoints.append(p)
         p = (6, 608)
         self.AllPoints.append(p)
@@ -401,15 +490,10 @@ class GameBoard:
         p = (608, 6)
         self.AllPoints.append(p)
 
-        self.canvas.delete(self.MainLn)
-        self.AllPoints = self.MakeNewShape()
-        Shape = list(self.AllPoints)
-        Shape.append(self.AllPoints[0])
-        self.MainLn = self.canvas.create_line(Shape, fill='black', width=1)
+        self.MakeNewShape()
 
         self.Player = tk.Frame(self.canvas, bg='#FF0000')
         self.Player.place(width=8, height=8, x=3, y=3)
 
         self.canvas.focus_set()
         self.root.mainloop()
-
