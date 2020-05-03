@@ -4,11 +4,13 @@ import threading
 import tkinter as tk
 from tkinter import messagebox
 from typing import Type
-from Enemy import Enemy
+
 import requests
+from Enemy import Enemy
 from PIL import Image, ImageTk
 from Player import Player
 from Shape import Shape
+
 
 class GameBoard:
     AllPoints = []
@@ -53,9 +55,9 @@ class GameBoard:
         self.canvas.bind("<space>", setSpaceClick)
         self.canvas.pack()
 
-        # filename = 'PIC.JPG'
-        # img = tk.PhotoImage(file=r"Graphics/picpic.gif")
-        # self.canvas.create_image(img.width()/2, img.height()/2, image=img)
+        filename = 'PIC.JPG'
+        img = tk.PhotoImage(file=r"Graphics/picpic.gif")
+        self.canvas.create_image(img.width()/2, img.height()/2, image=img)
 
         MainLn = self.canvas.create_polygon(6, 6, 608, 6, 608, 608, 6, 608, 6, 6, fill='grey', width=1)
 
@@ -81,7 +83,9 @@ class GameBoard:
         frmEnemy = tk.Frame(self.canvas, bg='#00FF00')
         self.E = Enemy(frmEnemy, self.LinesProperties, self.canvas)
 
-        self.AllPoints = self.Shape.MakeNewShapeRD(self.P.ExistingPoints, self.AllPoints)
+        self.Shape.setEnemy(self.E)
+
+        self.AllPoints = [(6, 6), (608, 6), (608, 608), (6, 608)]
 
         self.canvas.focus_set()
         self.root.mainloop()

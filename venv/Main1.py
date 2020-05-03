@@ -22,7 +22,6 @@ class Main:
         self.butStart = tk.Button(self.frame, text='Start')
         self.butStart.bind("<Button-1>", StartGame)
 
-
         self.butStart.place(width=80, x=208, y=190)
 
         self.root.mainloop()
