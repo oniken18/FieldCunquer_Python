@@ -14,40 +14,44 @@ from Shape import Shape
 
 class GameBoard:
     AllPoints = []
-    AllowedFrames = []
-    isOutLine = False
-    LinesProperties = []
+    LinesPropertiesX = []
+    LinesPropertiesY = []
+    frmLives = []
+    Lives = 5
+    ShapeArea = 0
+    Lvl = 0
 
     def __init__(self, root):
-
         canvasWidth = 610
-        canvasHeight = 610
+        canvasHeight = 646
 
         def setSpaceClick(event):
-            self.P.isSpacePressed = True
+            self.Plr.isSpacePressed = True
 
         def MovePlayerThread(event):
+            if self.Lives == 0:
+                return
+
             if event.char in ('4', '5', '6', '8'):
-                if event.char == self.P.MovingDirection:
+                if event.char == self.Plr.MovingDirection:
                     return
                 else:
-                    if self.P.MovingDirection != '0':
-                        self.P.MovingDirection = event.char
+                    if self.Plr.MovingDirection != '0':
+                        self.Plr.MovingDirection = event.char
                         return
 
-                self.P.MovingDirection = event.char
-                thread1 = threading.Thread(target=self.P.MovePlayer)
+                self.Plr.MovingDirection = event.char
+                thread1 = threading.Thread(target=self.Plr.MovePlayer)
                 thread1.start()
 
         def stopMovement(event):
-            if self.P.MovingDirection == event.char and not self.P.isOutLine:
-                self.P.MovingDirection = '0'
+            if self.Plr.MovingDirection == event.char and not self.Plr.isOutLine:
+                self.Plr.MovingDirection = '0'
 
             if event.keycode == 32:
-                self.P.isSpacePressed = False
+                self.Plr.isSpacePressed = False
 
         self.root = root
-        self.root.title = 'Submarine War'
 
         self.canvas = tk.Canvas(self.root, width=canvasWidth, height=canvasHeight)
         self.canvas.bind("<Key>", MovePlayerThread)
@@ -55,37 +59,72 @@ class GameBoard:
         self.canvas.bind("<space>", setSpaceClick)
         self.canvas.pack()
 
-        filename = 'PIC.JPG'
-        img = tk.PhotoImage(file=r"Graphics/picpic.gif")
-        self.canvas.create_image(img.width()/2, img.height()/2, image=img)
+        self.image1 = tk.PhotoImage(file=r"Graphics/pic0.gif")
+        self.image2 = tk.PhotoImage(file=r"Graphics/pic1.gif")
+        self.image_id = self.canvas.create_image(self.image1.width() / 2, self.image1.height() / 2, image=self.image2)
+
+        self.LinesPropertiesY.append(('y', 6, 6, 608, False))
+        self.LinesPropertiesY.append(('y', 608, 6, 608, False))
+        self.LinesPropertiesX.append(('x', 6, 6, 608, False))
+        self.LinesPropertiesX.append(('x', 608, 6, 608, False))
+
+        self.AllPoints = [(6, 6, True), (608, 6, True), (608, 608, True), (6, 608, True)]
 
         MainLn = self.canvas.create_polygon(6, 6, 608, 6, 608, 608, 6, 608, 6, 6, fill='grey', width=1)
-
-        self.LinesProperties.append(('y', 6, 6, 608))
-        self.LinesProperties.append(('y', 608, 6, 608))
-        self.LinesProperties.append(('x', 6, 6, 608))
-        self.LinesProperties.append(('x', 608, 6, 608))
-
-        self.Shape = Shape(MainLn, self.LinesProperties, self.canvas)
-
-        p = (6, 6)
-        self.AllPoints.append(p)
-        p = (6, 608)
-        self.AllPoints.append(p)
-        p = (608, 608)
-        self.AllPoints.append(p)
-        p = (608, 6)
-        self.AllPoints.append(p)
+        self.Shp = Shape(MainLn, self)
 
         frmPlayer = tk.Frame(self.canvas, bg='#FF0000')
-        self.P = Player(frmPlayer, self.LinesProperties, self.AllPoints, self.canvas, self.Shape)
+        self.Plr = Player(frmPlayer, self.AllPoints, self)
 
         frmEnemy = tk.Frame(self.canvas, bg='#00FF00')
-        self.E = Enemy(frmEnemy, self.LinesProperties, self.canvas)
+        self.Enm = Enemy(frmEnemy, self)
 
-        self.Shape.setEnemy(self.E)
+        self.frmBottom = tk.Canvas(self.canvas, bg='#FFFFFF')
+        self.frmBottom.place(x=6, y=614, height=30, width=602)
 
-        self.AllPoints = [(6, 6), (608, 6), (608, 608), (6, 608)]
+        for i in range(5):
+            self.frmLives.append(self.frmBottom.create_oval(90 + (i * 30), 5, 110 + (i * 30), 25, fill='blue'))
+
+        lblLives = tk.Label(self.frmBottom, font=("Courier", 18), text="Lives", bg='#FFFFFF', fg='#000000')
+        lblLives.place(x=6, y=0)
 
         self.canvas.focus_set()
         self.root.mainloop()
+
+    def NextLevel(self):
+        self.Enm.stopMovement = True
+        self.Lvl = self.Lvl + 1
+        self.canvas.itemconfig(self.image_id, image=self.image1)
+
+        self.LinesPropertiesY.clear()
+        self.LinesPropertiesX.clear()
+        self.LinesPropertiesY.append(('y', 6, 6, 608, False))
+        self.LinesPropertiesY.append(('y', 608, 6, 608, False))
+        self.LinesPropertiesX.append(('x', 6, 6, 608, False))
+        self.LinesPropertiesX.append(('x', 608, 6, 608, False))
+        self.AllPoints.clear()
+        self.AllPoints = [(6, 6, True), (608, 6, True), (608, 608, True), (6, 608, True)]
+
+        self.canvas.delete(self.Shp.MainLn)
+        del self.Shp
+
+        MainLn = self.canvas.create_polygon(6, 6, 608, 6, 608, 608, 6, 608, 6, 6, fill='grey', width=1)
+        self.Shp = Shape(MainLn, self)
+
+        self.Plr.Player.pack_forget()
+        self.Plr.Player.destroy()
+        # del self.Plr
+
+        frmPlayer = tk.Frame(self.canvas, bg='#FF0000')
+        self.Plr = Player(frmPlayer, self.AllPoints, self)
+
+        self.Enm.EnemyV.pack_forget()
+        self.Enm.EnemyV.destroy()
+        # del self.Enm
+
+        frmEnemy = tk.Frame(self.canvas, bg='#00FF00')
+        self.Enm = Enemy(frmEnemy, self)
+
+    def removeLive(self):
+        self.Lives = self.Lives - 1
+        self.frmBottom.itemconfigure(self.frmLives[self.Lives], state='hidden')

@@ -1,12 +1,11 @@
-
 import tkinter as tk
+
 from GameBoard1 import GameBoard
 
 
 class Main:
 
     def __init__(self):
-
         def StartGame(event):
             self.canvas.destroy()
             app = GameBoard(self.root)
