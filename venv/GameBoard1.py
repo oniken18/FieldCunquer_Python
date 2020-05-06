@@ -20,6 +20,7 @@ class GameBoard:
     Lives = 5
     ShapeArea = 0
     Lvl = 0
+    images = []
 
     def __init__(self, root):
         canvasWidth = 610
@@ -59,9 +60,16 @@ class GameBoard:
         self.canvas.bind("<space>", setSpaceClick)
         self.canvas.pack()
 
-        self.image1 = tk.PhotoImage(file=r"Graphics/pic0.gif")
-        self.image2 = tk.PhotoImage(file=r"Graphics/pic1.gif")
-        self.image_id = self.canvas.create_image(self.image1.width() / 2, self.image1.height() / 2, image=self.image2)
+        img = Image.open(r"Graphics/pic0.gif")
+        img = img.resize((646, 610), Image.ANTIALIAS)
+        self.images.append(ImageTk.PhotoImage(img))
+
+        img = Image.open(r"Graphics/pic1.gif")
+        img = img.resize((646, 610), Image.ANTIALIAS)
+        self.images.append(ImageTk.PhotoImage(img))
+
+        self.image_id = self.canvas.create_image(self.images[0].width() / 2, self.images[0].height() / 2,
+                                                 image=self.images[0])
 
         self.LinesPropertiesY.append(('y', 6, 6, 608, False))
         self.LinesPropertiesY.append(('y', 608, 6, 608, False))
@@ -94,7 +102,7 @@ class GameBoard:
     def NextLevel(self):
         self.Enm.stopMovement = True
         self.Lvl = self.Lvl + 1
-        self.canvas.itemconfig(self.image_id, image=self.image1)
+        self.canvas.itemconfig(self.image_id, image=self.images[1])
 
         self.LinesPropertiesY.clear()
         self.LinesPropertiesX.clear()
@@ -113,14 +121,12 @@ class GameBoard:
 
         self.Plr.Player.pack_forget()
         self.Plr.Player.destroy()
-        # del self.Plr
 
         frmPlayer = tk.Frame(self.canvas, bg='#FF0000')
         self.Plr = Player(frmPlayer, self.AllPoints, self)
 
         self.Enm.EnemyV.pack_forget()
         self.Enm.EnemyV.destroy()
-        # del self.Enm
 
         frmEnemy = tk.Frame(self.canvas, bg='#00FF00')
         self.Enm = Enemy(frmEnemy, self)
