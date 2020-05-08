@@ -1,13 +1,10 @@
-import ast
-import json as json
+import os
 import threading
 import tkinter as tk
-from tkinter import messagebox
-from typing import Type
 
-import requests
-from Enemy import Enemy
 from PIL import Image, ImageTk
+
+from Enemy import Enemy
 from Player import Player
 from Shape import Shape
 
@@ -16,11 +13,11 @@ class GameBoard:
     AllPoints = []
     LinesPropertiesX = []
     LinesPropertiesY = []
+    images = []
     frmLives = []
     Lives = 5
     ShapeArea = 0
     Lvl = 0
-    images = []
 
     def __init__(self, root):
         canvasWidth = 610
@@ -60,11 +57,13 @@ class GameBoard:
         self.canvas.bind("<space>", setSpaceClick)
         self.canvas.pack()
 
-        img = Image.open(r"Graphics/pic0.gif")
+        THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
+        img = Image.open(os.path.join(THIS_FOLDER, r'Graphics\pic0.gif'))
+
         img = img.resize((646, 610), Image.ANTIALIAS)
         self.images.append(ImageTk.PhotoImage(img))
 
-        img = Image.open(r"Graphics/pic1.gif")
+        img = Image.open(os.path.join(THIS_FOLDER, r'Graphics\pic1.gif'))
         img = img.resize((646, 610), Image.ANTIALIAS)
         self.images.append(ImageTk.PhotoImage(img))
 
@@ -82,7 +81,7 @@ class GameBoard:
         self.Shp = Shape(MainLn, self)
 
         frmPlayer = tk.Frame(self.canvas, bg='#FF0000')
-        self.Plr = Player(frmPlayer, self.AllPoints, self)
+        self.Plr = Player(frmPlayer, self)
 
         frmEnemy = tk.Frame(self.canvas, bg='#00FF00')
         self.Enm = Enemy(frmEnemy, self)
