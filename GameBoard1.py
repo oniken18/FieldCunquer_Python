@@ -39,6 +39,9 @@ class GameBoard:
                         return
 
                 self.Plr.MovingDirection = event.char
+
+                # self.Plr.MovePlayer()
+
                 thread1 = threading.Thread(target=self.Plr.MovePlayer)
                 thread1.start()
 
@@ -122,7 +125,7 @@ class GameBoard:
         self.Plr.Player.destroy()
 
         frmPlayer = tk.Frame(self.canvas, bg='#FF0000')
-        self.Plr = Player(frmPlayer, self.AllPoints, self)
+        self.Plr = Player(frmPlayer, self)
 
         self.Enm.EnemyV.pack_forget()
         self.Enm.EnemyV.destroy()
@@ -133,3 +136,89 @@ class GameBoard:
     def removeLive(self):
         self.Lives = self.Lives - 1
         self.frmBottom.itemconfigure(self.frmLives[self.Lives], state='hidden')
+
+    def startMove(self):
+
+        EnemyDirection = 1
+
+        while self.Enm.GB.Lives > 0 and not self.Enm.stopMovement:
+
+            isHit = False
+            if self.Enm.GB.Plr.isOutLine:
+
+                LastLn = tuple(self.Enm.GB.Plr.getLastWhiteLine())
+                if LastLn[0] != 'Finish':
+                    if LastLn[0] == 'y':
+                        if self.EnemyX + 7.7 < LastLn[1] < self.EnemyX + 8.3:
+                            if LastLn[2] < self.EnemyY + 8 < LastLn[3]:
+                                isHit = True
+                                self.strike()
+                    else:
+                        if self.EnemyY + 7.7 < LastLn[1] < self.EnemyY + 8.3:
+                            if LastLn[2] < self.EnemyX + 8 < LastLn[3]:
+                                isHit = True
+                                self.strike()
+
+            if not isHit:
+                for ln in self.Enm.GB.LinesPropertiesY:
+                    if self.EnemyX + 7.7 < ln[1] < self.EnemyX + 8.3:
+                        if ln[2] < self.EnemyY + 8 < ln[3]:
+                            isHit = True
+
+                            if not ln[4]:
+                                if EnemyDirection == 1:
+                                    EnemyDirection = 4
+                                elif EnemyDirection == 2:
+                                    EnemyDirection = 3
+                                elif EnemyDirection == 3:
+                                    EnemyDirection = 2
+                                elif EnemyDirection == 4:
+                                    EnemyDirection = 1
+                                break
+                            else:
+                                self.strike()
+
+            if not isHit:
+                for ln in self.Enm.GB.LinesPropertiesX:
+                    if self.EnemyY + 7.7 < ln[1] < self.EnemyY + 8.3:
+                        if ln[2] < self.EnemyX + 8 < ln[3]:
+                            if not ln[4]:
+                                if EnemyDirection == 1:
+                                    EnemyDirection = 2
+                                elif EnemyDirection == 2:
+                                    EnemyDirection = 1
+                                elif EnemyDirection == 3:
+                                    EnemyDirection = 4
+                                elif EnemyDirection == 4:
+                                    EnemyDirection = 3
+                                break
+                            else:
+                                self.strike()
+
+            self.Enm.EnemyV.place(x=self.EnemyX, y=self.EnemyY)
+
+            if EnemyDirection in (1, 2):
+                self.EnemyX = self.EnemyX + self.Enm.EnemySpeed
+            else:
+                self.EnemyX = self.EnemyX - self.Enm.EnemySpeed
+
+            if EnemyDirection in (1, 4):
+                self.EnemyY = self.EnemyY + self.Enm.EnemySpeed
+            else:
+                self.EnemyY = self.EnemyY - self.Enm.EnemySpeed
+
+    def strike(self):
+        # set lives -1
+
+        # back to start point on firs white
+
+        self.Plr.stopPlayer = True
+
+        # delete All WhiteLines in LinesProperties
+        for ln in self.LinesPropertiesX:
+            if ln[4]:
+                self.LinesPropertiesX.remove(ln)
+
+        for ln in self.LinesPropertiesY:
+            if ln[4]:
+                self.LinesPropertiesY.remove(ln)
