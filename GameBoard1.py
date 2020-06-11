@@ -86,11 +86,12 @@ class GameBoard:
         frmPlayer = tk.Frame(self.canvas, bg='#FF0000')
         self.Plr = Player(frmPlayer, self)
 
+
         frmEnemy = tk.Frame(self.canvas, bg='#00FF00')
         self.Enm = Enemy(frmEnemy, self)
 
         self.frmBottom = tk.Canvas(self.canvas, bg='#FFFFFF')
-        self.frmBottom.place(x=6, y=614, height=30, width=602)
+        self.frmBottom.place(x=6, y=614, height=35, width=602)
 
         for i in range(5):
             self.frmLives.append(self.frmBottom.create_oval(90 + (i * 30), 5, 110 + (i * 30), 25, fill='blue'))
@@ -136,6 +137,10 @@ class GameBoard:
     def removeLive(self):
         self.Lives = self.Lives - 1
         self.frmBottom.itemconfigure(self.frmLives[self.Lives], state='hidden')
+
+        if self.Lives ==0:
+            gm = tk.Label(self.canvas, font=("Courier", 50), text="GAME OVER", fg='#ffffff', bg= '#ff0000')
+            gm.place(x=120, y=150)
 
     def startMove(self):
 
